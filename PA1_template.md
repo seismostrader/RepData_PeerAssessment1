@@ -19,7 +19,8 @@ The activity-monitoring data can be downloaded [here](https://d396qusza40orc.clo
 
 First, load the data:
 
-```{r, echo=TRUE}
+
+```r
 # define source data zip file name
 sourceDataZipFile <- "activity.zip"
 
@@ -37,10 +38,31 @@ activityData <- read.csv("activity.csv")
 
 Here is an initial look at the dataset:
 
-```{r, echo=TRUE}
+
+```r
 # look at a summary of the data
 head(activityData)
+```
+
+```
+##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25
+```
+
+```r
 str(activityData)
+```
+
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Factor w/ 61 levels "2012-10-01","2012-10-02",..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
 ```
 
 There are 17,568 observations (measurements) and three variables:
@@ -51,17 +73,41 @@ There are 17,568 observations (measurements) and three variables:
 
 There are also some missing values for the "steps" variable:
 
-```{r, echo=TRUE}
+
+```r
 # calculate fraction of missing values for "steps" variable
 sum(is.na(activityData$steps))/dim(activityData)[[1]]
+```
+
+```
+## [1] 0.1311475
 ```
 
 Necessary preprocessing:
 
 - Convert the "date" variable to date format: 
 
-```{r, echo=TRUE}
+
+```r
 library(lubridate)
+```
+
+```
+## Warning: package 'lubridate' was built under R version 3.6.2
+```
+
+```
+## 
+## Attaching package: 'lubridate'
+```
+
+```
+## The following object is masked from 'package:base':
+## 
+##     date
+```
+
+```r
 activityData$date <- ymd(activityData$date)
 ```
 
@@ -69,39 +115,64 @@ activityData$date <- ymd(activityData$date)
 
 Calculate the total number of steps taken per day:
 
-```{r, echo=TRUE}
+
+```r
 # create a data frame containing each date and the corresponding number of steps
 stepsPerDay <- with(activityData, aggregate(steps, by=list(date), FUN=sum, na.rm=TRUE))
 names(stepsPerDay) <- c("date", "steps")
 head(stepsPerDay)
 ```
 
+```
+##         date steps
+## 1 2012-10-01     0
+## 2 2012-10-02   126
+## 3 2012-10-03 11352
+## 4 2012-10-04 12116
+## 5 2012-10-05 13294
+## 6 2012-10-06 15420
+```
+
 Make a histogram of the total number of steps each day:
 
-```{r, avgStepsPerDay, echo=TRUE}
+
+```r
 hist(stepsPerDay$steps, main="Total Number of Steps Per Day", xlab="total steps per day", 
      ylab="frequency", col="lightblue2", breaks=seq(0, 26000, by=2000))
 ```
+
+![](PA1_template_files/figure-html/avgStepsPerDay-1.png)<!-- -->
 
 Calculate and report the mean and median of the total number of steps taken per day.
 
 The mean number of steps taken per day is:
 
-```{r, echo=TRUE}
+
+```r
 mean(stepsPerDay$steps)
+```
+
+```
+## [1] 9354.23
 ```
 
 The median number of steps taken per day is:
 
-```{r, echo=TRUE}
+
+```r
 median(stepsPerDay$steps)
+```
+
+```
+## [1] 10395
 ```
 
 ## What is the average daily activity pattern?
 
 Make a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis):
 
-```{r, avgStepsPerInterval, echo=TRUE}
+
+```r
 # calculate average number of steps for each 5-minute interval, averaged across all days
 # and store information in data frame
 avgStepsInterval <- with(activityData, aggregate(steps, by=list(interval), FUN=mean, na.rm=TRUE))
@@ -111,6 +182,13 @@ names(avgStepsInterval) <- c("interval", "mean.steps")
 
 # generate time series plot
 library(ggplot2)
+```
+
+```
+## Warning: package 'ggplot2' was built under R version 3.6.3
+```
+
+```r
 g <- ggplot(avgStepsInterval, aes(interval, mean.steps))
 g <- g + geom_line(color="lightcyan4") + xlab("5-minute time interval") + 
   ylab("mean number of steps") + ggtitle("Mean Number of Steps Per 5-Minute Time Interval") + 
@@ -120,10 +198,17 @@ g <- g + geom_line(color="lightcyan4") + xlab("5-minute time interval") +
 print(g)
 ```
 
+![](PA1_template_files/figure-html/avgStepsPerInterval-1.png)<!-- -->
+
 Determine which 5-minute time interval, on average across all the days in the dataset, contains the maximum number of steps:
 
-```{r, echo=TRUE}
+
+```r
 avgStepsInterval[which.max(avgStepsInterval$mean.steps), ]$interval
+```
+
+```
+## [1] 835
 ```
 
 ## Imputing missing values
@@ -132,15 +217,21 @@ As seen before, a substantial number of days/time intervals are missing values (
 
 Calculate and report the total number of missing values in the dataset:
 
-```{r, echo=TRUE}
+
+```r
 sum(is.na(activityData$steps))
+```
+
+```
+## [1] 2304
 ```
 
 Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
 To determine whether to use the mean for the specified day or the mean for the specified five-minute time interval, let's look at the distributions of missing values over days and 5-minute time intervals:
 
-```{r, echo=TRUE}
+
+```r
 # add a column to original dataset to determine if the number of steps for each observation is missing
 activityData$missing <- is.na(activityData$steps)
 
@@ -149,10 +240,10 @@ missingStepsDate <- with(activityData, aggregate(missing ~ date, FUN=sum))
 
 # determine the total number of missing values per 5-minute time interval
 missingStepsInterval <- with(activityData, aggregate(missing ~ interval, FUN=sum))
-
 ```
 
-```{r, missingValues, echo=TRUE}
+
+```r
 # plot numbers of missing values per day and per 5-minute time interval
 par(mfrow=c(1, 2))
 plot(x=missingStepsDate$date, y=missingStepsDate$missing, main = "Number of Missing Values by Date",
@@ -161,17 +252,20 @@ plot(x=missingStepsInterval$interval, y=missingStepsInterval$missing, main = "Nu
      by Time Interval", xlab="interval", ylab="number of missing values")
 ```
 
+![](PA1_template_files/figure-html/missingValues-1.png)<!-- -->
+
 Most days have no missing values, but a few have more than 250. By constrast, each 5-minute time interval contains eight missing values. Therefore, it makes the most sense to assign the average number of steps for each 5-minute time interval.
 
 Fill in the missing values in the dataset by assigning the average number of steps for the given five-minute time interval:
 
-```{r, echo=TRUE}
+
+```r
 # calculate imputed numbers of steps for each observation
 imputedNumSteps <- avgStepsInterval$mean.steps[match(activityData$interval, avgStepsInterval$interval)]
-
 ```
 
-```{r, echo=TRUE}
+
+```r
 activityData <- transform(activityData, steps=ifelse(missing == TRUE, yes=imputedNumSteps, no=activityData$steps))
 activityData <- activityData[, -which(names(activityData) %in% c("missing"))]
 ```
@@ -180,31 +274,55 @@ Make a histogram of the total number of steps taken each day and calculate and r
 
 Recalculate the number of steps taken each day:
 
-```{r, echo=TRUE}
+
+```r
 # create a data frame containing each date and the corresponding number of steps
 stepsPerDayImpute <- with(activityData, aggregate(steps, by=list(date), FUN=sum))
 names(stepsPerDayImpute) <- c("date", "steps")
 head(stepsPerDayImpute)
 ```
 
+```
+##         date    steps
+## 1 2012-10-01 10766.19
+## 2 2012-10-02   126.00
+## 3 2012-10-03 11352.00
+## 4 2012-10-04 12116.00
+## 5 2012-10-05 13294.00
+## 6 2012-10-06 15420.00
+```
+
 The mean number of steps taken per day (using imputed data) is:
 
-```{r, echo=TRUE}
+
+```r
 mean(stepsPerDayImpute$steps)
+```
+
+```
+## [1] 10766.19
 ```
 
 The median number of steps taken per day (using imputed data) is:
 
-```{r, echo=TRUE}
+
+```r
 median(stepsPerDayImpute$steps)
+```
+
+```
+## [1] 10766.19
 ```
 
 Generate a histogram of the total number of steps per day (using imputed data):
 
-```{r, avgStepsPerDayImputed, echo=TRUE}
+
+```r
 hist(stepsPerDayImpute$steps, main="Total Number of Steps Per Day", xlab="total steps per day", 
      ylab="frequency", col="darkolivegreen1", breaks=seq(0, 26000, by=2000))
 ```
+
+![](PA1_template_files/figure-html/avgStepsPerDayImputed-1.png)<!-- -->
 
 Both the mean and median total numbers of steps per day increased slightly, and the shape of the frequency distribution is now closer to a normal distribution. The 0-2000 step peak is no longer present.
 
@@ -212,7 +330,8 @@ Both the mean and median total numbers of steps per day increased slightly, and 
 
 Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
 
-```{r, echo=TRUE}
+
+```r
 # create a column with day of the week for each observation
 activityData$dayOfWeek <- weekdays(activityData$date)
 
@@ -231,15 +350,29 @@ activityData <- activityData[, -which(names(activityData) %in% c("dayOfWeek"))]
 head(activityData)
 ```
 
+```
+##       steps       date interval dayOfWeekType
+## 1 1.7169811 2012-10-01        0       weekday
+## 2 0.3396226 2012-10-01        5       weekday
+## 3 0.1320755 2012-10-01       10       weekday
+## 4 0.1509434 2012-10-01       15       weekday
+## 5 0.0754717 2012-10-01       20       weekday
+## 6 2.0943396 2012-10-01       25       weekday
+```
+
 Calcluate the average number of steps taken for each time interval across all weekdays and weekend days.
 
-```{r, echo=TRUE}
+
+```r
 avgStepsIntByDateType <- with(activityData, aggregate(steps ~ interval+dayOfWeekType, FUN=mean))
 ```
 
 Make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
 
-```{r, avgStepsDateType, echo=TRUE}
+
+```r
 library(lattice)
 xyplot(data=avgStepsIntByDateType, steps~interval|dayOfWeekType, grid=TRUE, type="l", layout=c(1, 2), col="mediumpurple1", xlab="interval", ylab="number of steps", main="Average Number of Steps Per 5-Minute Interval")
 ```
+
+![](PA1_template_files/figure-html/avgStepsDateType-1.png)<!-- -->
